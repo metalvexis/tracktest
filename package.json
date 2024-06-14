@@ -1,0 +1,26 @@
+{
+  "name": "track-cli-template-ts",
+  "description": "CLI template for typescript application",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "test": "mocha --exit -R tap",
+    "build": "tsc"
+  },
+  "keywords": [
+    "track",
+    "cli",
+    "typescript"
+  ],
+  "repository": "none",
+  "license": "Unlicense",
+  "devDependencies": {
+    "@types/node": "^20.14.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "date-fns": "^3.6.0",
+    "immer": "^10.1.1",
+    "zustand": "^4.5.2"
+  }
+}
