@@ -1,4 +1,6 @@
-export const DATE_FORMAT = 'yyyy-MM-dd hh:mm'
+import { parseDateToString } from "./lib";
+
+export const DATE_FORMAT = 'yyyy-MM-dd H:m'
 
 export const SIZE_UNITS = {
   B: 1,
@@ -18,7 +20,7 @@ export const FEE_RATES: {
   STORAGE: CostPerUnit,
   UPTIME: CostPerUnit,
 } = {
-  TRANSFER: { cost: 1, unit: 1 * SIZE_UNITS.MB }, // 1 Yen per 1 MB
+  TRANSFER: { cost: 1, unit: 100 * SIZE_UNITS.MB }, // 1 Yen per 100 MB
   STORAGE: { cost: 1, unit: 1 * SIZE_UNITS.GB }, // 1 Yen per 1 GB
   UPTIME: { cost: 100, unit: 60 * TIME_UNITS.M }, // 100 Yen per 1 Hour
 }
@@ -44,10 +46,10 @@ export const RESPONSES = {
   EXCEED_USAGE_LIMIT: (command: string) => `${command}: please increase usage fee limit`,
   EXCEED_LIMIT: (command: string, type: string) => `${command}: ${type}`,
 
-  UPLOAD_SUCCESS: (transfer: number, storage: number, time?: Date) => `UPLOAD: ${transfer} ${storage} ${time ? time : '-'}`,
+  UPLOAD_SUCCESS: (transfer: number, storage: number, time: Date | null) => `UPLOAD: ${transfer} ${storage} ${time ? parseDateToString(time) : '-'}`,
   
   DOWNLOAD_NOT_FOUND: () => `DOWNLOAD: no such files`,
-  DOWNLOAD_SUCCESS: (transfer: number, storage: number, time?: Date) => `UPLOAD: ${transfer} ${storage} ${time ? time : '-'}`,
+  DOWNLOAD_SUCCESS: (transfer: number, time: Date | null) => `DOWNLOAD: ${transfer} ${time ? parseDateToString(time) : '-'}`,
 
   
   DELETE_NOT_FOUND: () => `DOWNLOAD: no such files`,

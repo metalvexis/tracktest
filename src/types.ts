@@ -35,22 +35,19 @@ interface CalculatedFees {
   transfer: number, // in Yen
   storage: number, // in Yen
   uptime: number, // in Yen
-  usage: number, // in Yen
+  // usage: number, // in Yen
 }
 
 interface InstanceMeta {
   count: number,
   start: Date,
-  stop: Date | null,
-}
-
-interface VmInstance {
-  [key: string]: InstanceMeta,
+  last_calc: Date,
+  stop: Date,
 }
 
 interface ServiceState {
   is_fee_overrun: boolean,
-  instances: VmInstance,
+  instances: InstanceMeta,
   limits: FeeLimits,
   fee_tiers: FeeTiers,
   allocation: Allocation,
@@ -58,8 +55,11 @@ interface ServiceState {
 }
 
 
-interface ServiceStore {
+interface StoreState {
   service: ServiceState;
+};
+
+interface StoreActions {
   upload: (d: Date, size: number) => void;
 };
 
