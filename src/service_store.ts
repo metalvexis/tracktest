@@ -4,6 +4,7 @@ import { SIZE_UNITS, TIME_UNITS, RESPONSES, COMMANDS } from "./constants";
 import {
   _upload,
   _download,
+  _delete,
   _updateUptimeAlloc,
   _updateUptimeFee,
   _assertUsageOverrun,
@@ -84,7 +85,7 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
     );
   },
 
-  delete: (date: Date, size: number) => {
+  remove: (date: Date, size: number) => {
     set(
       produce((draft: StoreState) => {
         _updateUptimeAlloc(draft, date);
@@ -94,9 +95,36 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
           return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.DELETE));
         }
 
-        
+        _delete(draft, date, size);
       })
     )
   },
 
+  launch: (date: Date, instanceCount: number) => {
+    set(
+      produce((draft: StoreState) => {
+        _updateUptimeAlloc(draft, date);
+        _updateUptimeFee(draft);
+
+        if (_assertUsageOverrun(draft)) {
+          return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.LAUNCH));
+        }
+
+      })
+    )
+  },
+
+  stop: (date: Date, instanceCount: number) => {
+    set(
+      produce((draft: StoreState) => {
+        _updateUptimeAlloc(draft, date);
+        _updateUptimeFee(draft);
+
+        if (_assertUsageOverrun(draft)) {
+          return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.STOP));
+        }
+
+      })
+    )
+  },
 }));

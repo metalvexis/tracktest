@@ -61,6 +61,10 @@ interface StoreState {
 
 interface StoreActions {
   upload: (d: Date, size: number) => void;
+  download: (date: Date, size: number) => void;
+  remove: (date: Date, size: number) => void;
+  launch: (date: Date, instanceCount: number) => void;
+  stop: (date: Date, instanceCount: number) => void;
 };
 
 type CostPerUnit = { cost: number, unit: number };

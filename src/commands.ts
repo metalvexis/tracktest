@@ -1,5 +1,10 @@
 import { RESPONSES, COMMANDS, ABBREV } from "./constants";
-import { calcAllFee, calcUptimeFee, calcAllocUptime, usageLimitToUptimeMinutes } from "./lib";
+import {
+  calcAllFee,
+  calcUptimeFee,
+  calcAllocUptime,
+  calcAutoShutdownDate,
+} from "./lib";
 import { isSameMonth, differenceInMinutes, addMonths } from "date-fns";
 
 export function _upload(
@@ -19,23 +24,27 @@ export function _upload(
     allocUptime
   );
 
-  const { isExceedT, isExceedS, isExceedU, isAutoShutMonth  } = _assertLimits(draft, d, {
-    allocTransfer,
-    allocStorage,
-    storageFee,
-  });
+  const { isExceedT, isExceedS, isExceedU, isAutoShutMonth } = _assertLimits(
+    draft,
+    d,
+    {
+      allocTransfer,
+      allocStorage,
+      storageFee,
+    }
+  );
 
   if (isExceedS) {
     console.log(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.s));
     return;
   }
- 
+
   if (isExceedT) {
     console.log(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.t));
     return;
   }
 
-  if(isExceedU) {
+  if (isExceedU) {
     console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD));
     return;
   }
@@ -63,7 +72,7 @@ export function _download(draft: StoreState, d: Date, size: number) {
     console.log(RESPONSES.DOWNLOAD_NOT_FOUND());
     return;
   }
-  
+
   const { isExceedT, isAutoShutMonth } = _assertLimits(draft, d, {
     allocTransfer,
   });
@@ -75,9 +84,7 @@ export function _download(draft: StoreState, d: Date, size: number) {
 
   state.allocation.transfer = allocTransfer;
 
-  console.log(
-    RESPONSES.DOWNLOAD_SUCCESS(size, isAutoShutMonth ? d : null)
-  )
+  console.log(RESPONSES.DOWNLOAD_SUCCESS(size, isAutoShutMonth ? d : null));
 }
 
 export function _delete(draft: StoreState, d: Date, size: number) {
@@ -89,22 +96,33 @@ export function _delete(draft: StoreState, d: Date, size: number) {
   }
 
   const allocStorage = state.allocation.storage - size;
-  
+
   const { isAutoShutMonth } = _assertLimits(draft, d, {
     allocStorage,
   });
 
   state.allocation.storage = allocStorage;
 
-  console.log(
-    RESPONSES.DELETE_SUCCESS(size, isAutoShutMonth ? d : null)
-  )
+  console.log(RESPONSES.DELETE_SUCCESS(size, isAutoShutMonth ? d : null));
 }
+
+export function _launch(draft: StoreState, d: Date, instanceCount: number) {
+  const state = draft.service;
+  const allocInstance = state.instances.count + instanceCount;
+  const autoShutdownDate = calcAutoShutdownDate(state, instanceCount, d);
+
+  state.instances.count = allocInstance;
+  state.instances.start = d;
+  state.instances.stop = autoShutdownDate;
+  state.instances.last_calc = d;
+}
+
+export function _stop(draft: StoreState, d: Date, instanceCount: number) {}
 
 export function _updateUptimeAlloc(draft: StoreState, now: Date) {
   const allocUptime = calcAllocUptime(draft.service, now);
   const isLastMinute =
-    differenceInMinutes(now, draft.service.instances.stop) === 1;
+    differenceInMinutes(now, draft.service.instances.stop) <= 1;
 
   if (isLastMinute) return;
 
@@ -132,25 +150,39 @@ export function _assertUsageOverrun(draft: StoreState) {
   return isOverrun;
 }
 
-export function _assertLimits(draft: StoreState, d: Date, changes: {
-  allocTransfer?: number,
-  allocStorage?: number,
-  allocUptime?: number,
-  transferFee?: number,
-  storageFee?: number,
-  uptimeFee?: number,
-}) {
+export function _assertLimits(
+  draft: StoreState,
+  d: Date,
+  changes: {
+    allocTransfer?: number;
+    allocStorage?: number;
+    allocUptime?: number;
+    transferFee?: number;
+    storageFee?: number;
+    uptimeFee?: number;
+  }
+) {
   const state = draft.service;
-  const { allocTransfer =0, allocStorage = 0, storageFee = 0, uptimeFee = 0} = changes;
-  const isExceedT = allocTransfer > (state.limits.t);
-  const isExceedS = allocStorage > (state.limits.s);
-  const isExceedU = state.limits.u > 0 ? storageFee + uptimeFee > state.limits.u : false;
+  const {
+    allocTransfer = 0,
+    allocStorage = 0,
+    storageFee = 0,
+    uptimeFee = 0,
+  } = changes;
+  const isExceedT = allocTransfer > state.limits.t;
+  const isExceedS = allocStorage > state.limits.s;
+  const isExceedU =
+    state.limits.u > 0 ? storageFee + uptimeFee > state.limits.u : false;
   const isAutoShutMonth =
     state.instances.stop && isSameMonth(state.instances.stop, d);
   const isAutoShutNextMonth =
     state.instances.stop && isSameMonth(addMonths(state.instances.stop, 1), d);
 
   return {
-    isExceedT, isExceedS, isExceedU, isAutoShutMonth, isAutoShutNextMonth
-  }
+    isExceedT,
+    isExceedS,
+    isExceedU,
+    isAutoShutMonth,
+    isAutoShutNextMonth,
+  };
 }
