@@ -15,6 +15,7 @@ test("2_Stop success", function () {
   const state = TestStore.getState();
   const strDate = "2021-04-03 12:00"
   const date1 = parseStringToDate(strDate);
+  const startDate = parseStringToDate(strDate);
   state.service.instances = {
     auto_stop: addMinutes(date1, 201),
     list: {
@@ -27,7 +28,7 @@ test("2_Stop success", function () {
   }
   const stopInstance = 15;
 
-  _stop(state, date1, stopInstance);
+  _stop(state, date1, startDate, stopInstance);
   expect(console.log).toHaveBeenNthCalledWith(
     1,
     RESPONSES.STOP_SUCCESS(15, addMinutes(date1, 401))

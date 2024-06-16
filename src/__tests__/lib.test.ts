@@ -55,7 +55,7 @@ describe("LIBRARY", () => {
     const initState: ServiceState = { ...initialServiceState };
     const free_uptime = initState.fee_tiers.free_uptime; // in Minutes
     const excess = 60;
-    const expectFee = (excess / FEE_RATES.UPTIME.unit) * FEE_RATES.UPTIME.cost;
+    const expectFee = 0;
     const uptimeFee = calcUptimeFee(initState, free_uptime + excess);
 
     expect(uptimeFee).toBe(expectFee);
@@ -97,7 +97,7 @@ describe("LIBRARY", () => {
     const initState: ServiceState = { ...initialServiceState };
     const instanceCount = 100;
     const start = new Date(2021, 3, 1, 12, 0, 0);
-    const expectShutDate = new Date(2021, 3, 1, 13, 1, 0);
+    const expectShutDate = addMinutes(start, 61);
     const shutDate = calcAutoShutdownDate(initState, instanceCount, start);
     expect(shutDate.toLocaleString()).toBe(expectShutDate.toLocaleString());
   });

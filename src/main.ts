@@ -4,7 +4,7 @@ import { ServiceState } from "./service_store";
 import { parseStringToDate } from "./lib";
 function main(lines: string[]) {
   const { getState } = ServiceState;
-  const { upload, download, remove } = getState();
+  const { upload, download, remove, launch, stop } = getState();
   lines.forEach((v, i) => {
     if (v === "" || !v) return;
     const [command, ...args] = v.split(" ");
@@ -20,21 +20,31 @@ function main(lines: string[]) {
         break;
 
       case COMMANDS.LAUNCH:
+        const launchDate = parseStringToDate(`${args[0]} ${args[1]}`);
+        upload(launchDate, +args[2]);
+        break;
         break;
 
       case COMMANDS.STOP:
+        const stopDate = parseStringToDate(`${args[0]} ${args[1]}`);
+        const startDate = parseStringToDate(`${args[2]} ${args[3]}`);
+        stop(stopDate, startDate, +args[4]);
+        break;
         break;
 
       case COMMANDS.UPLOAD:
-        upload(parseStringToDate(`${args[0]} ${args[1]}`), +args[2]);
+        const uploadDate = parseStringToDate(`${args[0]} ${args[1]}`);
+        upload(uploadDate, +args[2]);
         break;
 
       case COMMANDS.DOWNLOAD:
-        download(parseStringToDate(`${args[0]} ${args[1]}`), +args[2]);
+        const downloadDate = parseStringToDate(`${args[0]} ${args[1]}`);
+        download(downloadDate, +args[2]);
         break;
 
       case COMMANDS.DELETE:
-        remove(parseStringToDate(`${args[0]} ${args[1]}`), +args[2]);
+        const removeDate = parseStringToDate(`${args[0]} ${args[1]}`);
+        remove(removeDate, +args[2]);
         break;
     }
   });

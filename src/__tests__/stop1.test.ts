@@ -15,6 +15,7 @@ test("1_Stop not existing", function () {
   const state = TestStore.getState();
   const strDate = "2021-04-03 12:00"
   const date1 = parseStringToDate(strDate);
+  const startDate = parseStringToDate(strDate);
   state.service.instances.list = {
     [strDate]: {
       count: 30,
@@ -24,7 +25,7 @@ test("1_Stop not existing", function () {
   }
   const stopInstance = 60;
 
-  _stop(state, date1, stopInstance);
+  _stop(state, date1, startDate, stopInstance);
   expect(console.log).toHaveBeenNthCalledWith(
     1,
     RESPONSES.STOP_FAIL()

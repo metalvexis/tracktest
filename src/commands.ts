@@ -5,6 +5,7 @@ import {
   calcAllocUptime,
   calcAutoShutdownDate,
   parseDateToString,
+  calcLimits,
 } from "./lib";
 import { isSameMonth, differenceInMinutes, addMonths } from "date-fns";
 
@@ -25,7 +26,7 @@ export function _upload(
     allocUptime
   );
 
-  const { isExceedT, isExceedS, isExceedU, isAutoShutMonth } = _assertLimits(
+  const { isExceedT, isExceedS, isExceedU, isExceedFreeUptime, isAutoShutMonth } = calcLimits(
     draft,
     d,
     {
@@ -45,7 +46,7 @@ export function _upload(
     return;
   }
 
-  if (isExceedU) {
+  if (isExceedU || isExceedFreeUptime) {
     console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD));
     return;
   }
@@ -74,7 +75,7 @@ export function _download(draft: StoreState, d: Date, size: number) {
     return;
   }
 
-  const { isExceedT, isAutoShutMonth } = _assertLimits(draft, d, {
+  const { isExceedT, isAutoShutMonth } = calcLimits(draft, d, {
     allocTransfer,
   });
 
@@ -103,7 +104,7 @@ export function _delete(draft: StoreState, d: Date, size: number) {
 
   const allocStorage = state.allocation.storage - size;
 
-  const { isAutoShutMonth } = _assertLimits(draft, d, {
+  const { isAutoShutMonth } = calcLimits(draft, d, {
     allocStorage,
   });
 
@@ -139,7 +140,7 @@ export function _launch(draft: StoreState, d: Date, instanceCount: number) {
   state.instances.list[instanceKey] = tmpInstance;
   state.instances.auto_stop = newShutdownDate;
 
-  const { isAutoShutMonth } = _assertLimits(draft, d, {});
+  const { isAutoShutMonth } = calcLimits(draft, d, {});
 
   console.log(
     RESPONSES.LAUNCH_SUCCESS(
@@ -149,10 +150,10 @@ export function _launch(draft: StoreState, d: Date, instanceCount: number) {
   );
 }
 
-export function _stop(draft: StoreState, d: Date, instanceCount: number) {
+export function _stop(draft: StoreState, d: Date, start: Date, instanceCount: number) {
   const state = draft.service;
   const tmpInstanceList = Object.assign({}, state.instances.list);
-  const instanceKey = parseDateToString(d);
+  const instanceKey = parseDateToString(start);
 
   if (typeof tmpInstanceList[instanceKey] === "undefined") {
     console.log(RESPONSES.STOP_FAIL());
@@ -180,7 +181,7 @@ export function _stop(draft: StoreState, d: Date, instanceCount: number) {
   state.instances.list[instanceKey] = tmpInstance;
   state.instances.auto_stop = newShutdownDate;
 
-  const { isAutoShutMonth } = _assertLimits(draft, d, {});
+  const { isAutoShutMonth } = calcLimits(draft, d, {});
 
   console.log(
     RESPONSES.STOP_SUCCESS(
@@ -194,14 +195,16 @@ export function _updateUptimeAlloc(draft: StoreState, now: Date) {
   const state = draft.service;
   const tmpInstanceList = Object.assign({}, state.instances.list);
   const allocUptime = calcAllocUptime(draft.service, now);
-  const isLastMinute =
-    differenceInMinutes(now, draft.service.instances.auto_stop) <= 1;
-
-  if (isLastMinute) return;
+  const auto_stop = state.instances.auto_stop;
 
   for (const key in tmpInstanceList) {
     if (Object.prototype.hasOwnProperty.call(tmpInstanceList, key)) {
-      tmpInstanceList[key].last_calc = now;
+      if (now >= auto_stop) {
+        tmpInstanceList[key].last_calc = auto_stop;
+        tmpInstanceList[key].count = 0;
+      } else {
+        tmpInstanceList[key].last_calc = now;
+      }      
     }
   }
 
@@ -215,12 +218,19 @@ export function _updateUptimeFee(draft: StoreState) {
   draft.service.calculated_fees.uptime = uptimeFee;
 }
 
-export function _assertUsageOverrun(draft: StoreState) {
+export function _assertUsageOverrun(draft: StoreState, date: Date) {
   const state = draft.service;
   const tmpInstanceList = Object.assign({}, state.instances.list);
-  const isOverrun =
-    state.calculated_fees.storage + state.calculated_fees.uptime >
-    state.limits.u;
+
+  const { isExceedU, isExceedFreeUptime } = calcLimits(draft, date, {
+    allocTransfer: state.allocation.transfer,
+    allocStorage: state.allocation.storage,
+    allocUptime: state.allocation.uptime,
+    transferFee: state.calculated_fees.transfer,
+    storageFee: state.calculated_fees.storage,
+    uptimeFee: state.calculated_fees.uptime,  
+  })
+  const isOverrun = isExceedU || isExceedFreeUptime;
 
   if (isOverrun) {
     draft.service.is_fee_overrun = true;
@@ -237,6 +247,13 @@ export function _assertUsageOverrun(draft: StoreState) {
   return isOverrun;
 }
 
+/**
+ * @deprecated
+ * @param draft 
+ * @param d 
+ * @param changes 
+ * @returns 
+ */
 export function _assertLimits(
   draft: StoreState,
   d: Date,
@@ -255,11 +272,15 @@ export function _assertLimits(
     allocStorage = 0,
     storageFee = 0,
     uptimeFee = 0,
+    allocUptime = 0,
   } = changes;
   const isExceedT = allocTransfer > state.limits.t;
   const isExceedS = allocStorage > state.limits.s;
+  const hasMoreYen = state.limits.u > 0;
+  const isExceedFreeUptime =
+    !hasMoreYen ? allocUptime > state.fee_tiers.free_uptime: false;
   const isExceedU =
-    state.limits.u > 0 ? storageFee + uptimeFee > state.limits.u : false;
+    hasMoreYen ? storageFee + uptimeFee > state.limits.u : false;
   const isAutoShutMonth =
     state.instances.auto_stop && isSameMonth(state.instances.auto_stop, d);
   const isAutoShutNextMonth =
@@ -270,7 +291,26 @@ export function _assertLimits(
     isExceedT,
     isExceedS,
     isExceedU,
+    isExceedFreeUptime,
     isAutoShutMonth,
     isAutoShutNextMonth,
   };
+}
+
+export function _fastForward(
+  draft: StoreState,
+  date: Date,
+  command: string,
+) {
+  _updateUptimeAlloc(draft, date);
+  _updateUptimeFee(draft);
+  const isOverrun = _assertUsageOverrun(draft, date);
+  
+  if (isOverrun) {
+    console.log(RESPONSES.EXCEED_USAGE_LIMIT(command));
+  }
+
+  return {
+    isOverrun
+  }
 }

@@ -1,4 +1,5 @@
 
+
 interface FeeLimits {
   // ALL limit in Byte
   t: number,
@@ -67,11 +68,12 @@ interface StoreState {
 };
 
 interface StoreActions {
+  // fastForward: (date: Date, command: string) => void;
   upload: (d: Date, size: number) => void;
   download: (date: Date, size: number) => void;
   remove: (date: Date, size: number) => void;
   launch: (date: Date, instanceCount: number) => void;
-  stop: (date: Date, instanceCount: number) => void;
+  stop: (date: Date, start: Date, instanceCount: number) => void;
 };
 
 type CostPerUnit = { cost: number, unit: number };
