@@ -53,5 +53,5 @@ export const RESPONSES = {
 
   
   DELETE_NOT_FOUND: () => `DOWNLOAD: no such files`,
-  DELETE_SUCCESS: (storage: number, time?: Date) => `UPLOAD: ${storage} ${time ? time : '-'}`,
+  DELETE_SUCCESS: (storage: number, time: Date | null) => `UPLOAD: ${storage} ${time ? time : '-'}`,
 };

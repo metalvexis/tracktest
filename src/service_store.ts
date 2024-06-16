@@ -1,15 +1,21 @@
-import { createStore } from 'zustand/vanilla'
-import { produce } from 'immer';
-import { SIZE_UNITS, TIME_UNITS, RESPONSES, COMMANDS } from './constants';
-import { _upload, _updateUptimeAlloc, _updateUptimeFee, _assertUsageOverrun } from './commands';
+import { createStore } from "zustand/vanilla";
+import { produce } from "immer";
+import { SIZE_UNITS, TIME_UNITS, RESPONSES, COMMANDS } from "./constants";
+import {
+  _upload,
+  _download,
+  _updateUptimeAlloc,
+  _updateUptimeFee,
+  _assertUsageOverrun,
+} from "./commands";
 
 export const initialServiceState: ServiceState = {
   is_fee_overrun: false,
   instances: {
     count: 0,
-    start: new Date(2000,0,1,0,0),
-    last_calc: new Date(2000,0,1,0,0),
-    stop: new Date(2000,0,1,0,0),
+    start: new Date(2000, 0, 1, 0, 0),
+    last_calc: new Date(2000, 0, 1, 0, 0),
+    stop: new Date(2000, 0, 1, 0, 0),
   },
   limits: {
     t: 100 * SIZE_UNITS.GB, // 100 GB
@@ -41,12 +47,13 @@ export const initialServiceState: ServiceState = {
     storage: 0,
     transfer: 0,
     uptime: 0,
-  }
-}
+  },
+};
 
 export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
-  service: {...initialServiceState},
-  eom: () => set(produce((draft: StoreState) => {})),
+  service: { ...initialServiceState },
+  calc: () => set(produce((draft: StoreState) => {})),
+
   upload: (date: Date, size: number) => {
     set(
       produce((draft: StoreState) => {
@@ -54,11 +61,42 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
         _updateUptimeFee(draft);
 
         if (_assertUsageOverrun(draft)) {
-          return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD))
+          return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD));
         }
 
-        _upload(draft, date, size)
-      }),
+        _upload(draft, date, size);
+      })
+    );
+  },
+
+  download: (date: Date, size: number) => {
+    set(
+      produce((draft: StoreState) => {
+        _updateUptimeAlloc(draft, date);
+        _updateUptimeFee(draft);
+
+        if (_assertUsageOverrun(draft)) {
+          return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.DOWNLOAD));
+        }
+
+        _download(draft, date, size);
+      })
+    );
+  },
+
+  delete: (date: Date, size: number) => {
+    set(
+      produce((draft: StoreState) => {
+        _updateUptimeAlloc(draft, date);
+        _updateUptimeFee(draft);
+
+        if (_assertUsageOverrun(draft)) {
+          return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.DELETE));
+        }
+
+        
+      })
     )
-  }
-}))
+  },
+
+}));
