@@ -1,0 +1,50 @@
+[
+   {
+      "input": "in/basic/00_sample1.in",
+      "output": "out/basic/00_sample1.out",
+      "description": "[基本実装] サンプル1",
+      "description_en": "[Basic] Sample1"
+   },
+   {
+      "input": "in/basic/00_sample2.in",
+      "output": "out/basic/00_sample2.out",
+      "description": "[応用実装] サンプル2",
+      "description_en": "[Advanced] Sample2"
+   },
+   {
+      "input": "in/basic/10_single_20_LS.in",
+      "output": "out/basic/10_single_20_LS.out",
+      "description": "[基本実装] クエリ数が 42 である場合に正答できる (クエリの種類: CALC LAUNCH STOP)",
+      "description_en": "[Basic] Correct when the number of queries is 42  (Query types: CALC LAUNCH STOP)"
+   },
+   {
+      "input": "in/basic/10_single_20_UDE.in",
+      "output": "out/basic/10_single_20_UDE.out",
+      "description": "[基本実装] クエリ数が 43 である場合に正答できる (クエリの種類: CALC DELETE DOWNLOAD UPLOAD)",
+      "description_en": "[Basic] Correct when the number of queries is 43  (Query types: CALC DELETE DOWNLOAD UPLOAD)"
+   },
+   {
+      "input": "in/basic/10_single_20_UDELS.in",
+      "output": "out/basic/10_single_20_UDELS.out",
+      "description": "[基本実装] クエリ数が 39 である場合に正答できる (クエリの種類: CALC DELETE DOWNLOAD LAUNCH UPLOAD)",
+      "description_en": "[Basic] Correct when the number of queries is 39  (Query types: CALC DELETE DOWNLOAD LAUNCH UPLOAD)"
+   },
+   {
+      "input": "in/basic/10_single_e_20_UDELS.in",
+      "output": "out/basic/10_single_e_20_UDELS.out",
+      "description": "[基本実装] クエリ数が 55 である場合に正答できる (クエリの種類: CALC DELETE DOWNLOAD LAUNCH STOP UPLOAD)",
+      "description_en": "[Basic] Correct when the number of queries is 55  (Query types: CALC DELETE DOWNLOAD LAUNCH STOP UPLOAD)"
+   },
+   {
+      "input": "in/basic/11_ex1.in",
+      "output": "out/basic/11_ex1.out",
+      "description": "[基本実装] クエリ数が 7 である場合に正答できる (クエリの種類: CALC DELETE DOWNLOAD UPLOAD)",
+      "description_en": "[Basic] Correct when the number of queries is 7  (Query types: CALC DELETE DOWNLOAD UPLOAD)"
+   },
+   {
+      "input": "in/basic/20_composite_20_UDELSPC.in",
+      "output": "out/basic/20_composite_20_UDELSPC.out",
+      "description": "[応用実装] クエリ数が 43 である場合に正答できる (クエリの種類: CALC CHANGE DELETE DOWNLOAD LAUNCH STOP UPGRADE UPLOAD)",
+      "description_en": "[Advanced] Correct when the number of given queries is 43  (Query types: CALC CHANGE DELETE DOWNLOAD LAUNCH STOP UPGRADE UPLOAD)"
+   }
+]
