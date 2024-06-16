@@ -6,7 +6,7 @@ import { createStore } from "zustand";
 
 const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceState}));
 
-jest.spyOn(global.console, 'log').mockImplementation(() => {});
+jest.spyOn(global.console, 'log')
 
 test("3_Download Exceed transfer limit", function() {
   const state = TestStore.getState();

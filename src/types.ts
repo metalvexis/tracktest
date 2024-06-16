@@ -42,18 +42,25 @@ interface InstanceMeta {
   count: number,
   start: Date,
   last_calc: Date,
-  stop: Date,
+}
+
+interface InstanceItem {
+  [key: string]: InstanceMeta,
+}
+
+interface Instance {
+  auto_stop: Date,
+  list: InstanceItem
 }
 
 interface ServiceState {
   is_fee_overrun: boolean,
-  instances: InstanceMeta,
+  instances: Instance,
   limits: FeeLimits,
   fee_tiers: FeeTiers,
   allocation: Allocation,
   calculated_fees: CalculatedFees,
 }
-
 
 interface StoreState {
   service: ServiceState;

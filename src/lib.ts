@@ -52,11 +52,21 @@ export const calcUptimeFee = (
 
 export const calcAllocUptime = (state: ServiceState, now: Date) => {
   const inst = state.instances;
+  const instList = inst.list;
   const currUptime = state.allocation.uptime;
-  const isStopped = inst.stop && inst.stop < now;
-  const tmpAllocUptime = inst.count * (differenceInMinutes(now, inst.last_calc))
+  let totalTmpAllocUptime = currUptime;
+
+  for (const k in instList) {
+    if (Object.prototype.hasOwnProperty.call(instList, k)) {
+      const elem = instList[k];
+      
+      if (elem.count === 0) continue;
+
+      totalTmpAllocUptime += elem.count * (differenceInMinutes(now, elem.last_calc));
+    }
+  }
   
-  return isStopped ? currUptime : currUptime + tmpAllocUptime;
+  return totalTmpAllocUptime;
 }
 
 export const calcAutoShutdownDate = (
@@ -65,7 +75,8 @@ export const calcAutoShutdownDate = (
   start: Date,
 ): Date => {
   const maxUptime = usageLimitToUptimeMinutes(state.limits.u) + state.fee_tiers.free_uptime;
-  const usableUptime = maxUptime / instanceCount;
+  const currUptime = state.allocation.uptime;
+  const usableUptime = Math.floor((maxUptime - currUptime) / instanceCount);
   const shutDate = addMinutes(start, usableUptime + 1);
   return shutDate;
 }

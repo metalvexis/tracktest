@@ -6,7 +6,7 @@ import { createStore } from "zustand";
 
 const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceState}));
 
-jest.spyOn(global.console, 'log').mockImplementation(() => {});
+jest.spyOn(global.console, 'log')
 
 test("1_Download existing", function() {
   const state = TestStore.getState(); // store.getState();
@@ -21,6 +21,6 @@ test("1_Download existing", function() {
   expect(state.service.allocation.transfer).toBe(existingFileSize + size);
 
   expect(console.log).toHaveBeenCalledWith(
-    RESPONSES.DOWNLOAD_SUCCESS(size, null)
+    RESPONSES.DOWNLOAD_SUCCESS(existingFileSize + size, null)
   )
 });

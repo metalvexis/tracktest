@@ -4,6 +4,7 @@ import {
   calcUptimeFee,
   calcAllocUptime,
   calcAutoShutdownDate,
+  parseDateToString,
 } from "./lib";
 import { isSameMonth, differenceInMinutes, addMonths } from "date-fns";
 
@@ -57,9 +58,9 @@ export function _upload(
 
   console.log(
     RESPONSES.UPLOAD_SUCCESS(
-      size,
-      size,
-      isAutoShutMonth ? state.instances.stop : null
+      state.allocation.transfer,
+      state.allocation.storage,
+      isAutoShutMonth ? state.instances.auto_stop : null
     )
   );
 }
@@ -84,7 +85,12 @@ export function _download(draft: StoreState, d: Date, size: number) {
 
   state.allocation.transfer = allocTransfer;
 
-  console.log(RESPONSES.DOWNLOAD_SUCCESS(size, isAutoShutMonth ? d : null));
+  console.log(
+    RESPONSES.DOWNLOAD_SUCCESS(
+      state.allocation.transfer,
+      isAutoShutMonth ? state.instances.auto_stop : null
+    )
+  );
 }
 
 export function _delete(draft: StoreState, d: Date, size: number) {
@@ -108,25 +114,98 @@ export function _delete(draft: StoreState, d: Date, size: number) {
 
 export function _launch(draft: StoreState, d: Date, instanceCount: number) {
   const state = draft.service;
-  const allocInstance = state.instances.count + instanceCount;
-  const autoShutdownDate = calcAutoShutdownDate(state, instanceCount, d);
+  const tmpInstanceList = Object.assign({}, state.instances.list);
+  const instanceKey = parseDateToString(d);
+  const tmpInstance: InstanceMeta =
+    typeof tmpInstanceList[instanceKey] === "undefined"
+      ? {
+          count: instanceCount,
+          start: d,
+          last_calc: d,
+        }
+      : {
+          ...tmpInstanceList[instanceKey],
+          count: tmpInstanceList[instanceKey].count + instanceCount,
+        };
 
-  state.instances.count = allocInstance;
-  state.instances.start = d;
-  state.instances.stop = autoShutdownDate;
-  state.instances.last_calc = d;
+  tmpInstanceList[instanceKey] = tmpInstance;
+  const totalInstanceCount = Object.entries(tmpInstanceList).reduce(
+    (p, c) => p + c[1].count,
+    0
+  );
+
+  const newShutdownDate = calcAutoShutdownDate(state, totalInstanceCount, d);
+
+  state.instances.list[instanceKey] = tmpInstance;
+  state.instances.auto_stop = newShutdownDate;
+
+  const { isAutoShutMonth } = _assertLimits(draft, d, {});
+
+  console.log(
+    RESPONSES.LAUNCH_SUCCESS(
+      totalInstanceCount,
+      isAutoShutMonth ? state.instances.auto_stop : null
+    )
+  );
 }
 
-export function _stop(draft: StoreState, d: Date, instanceCount: number) {}
+export function _stop(draft: StoreState, d: Date, instanceCount: number) {
+  const state = draft.service;
+  const tmpInstanceList = Object.assign({}, state.instances.list);
+  const instanceKey = parseDateToString(d);
+
+  if (typeof tmpInstanceList[instanceKey] === "undefined") {
+    console.log(RESPONSES.STOP_FAIL());
+    return;
+  }
+
+  if (tmpInstanceList[instanceKey].count < instanceCount) {
+    console.log(RESPONSES.STOP_FAIL());
+    return;
+  }
+
+  const tmpInstance: InstanceMeta = {
+    ...tmpInstanceList[instanceKey],
+    count: tmpInstanceList[instanceKey].count - instanceCount,
+  };
+
+  tmpInstanceList[instanceKey] = tmpInstance;
+  const totalInstanceCount = Object.entries(tmpInstanceList).reduce(
+    (p, c) => p + c[1].count,
+    0
+  );
+
+  const newShutdownDate = calcAutoShutdownDate(state, totalInstanceCount, d);
+
+  state.instances.list[instanceKey] = tmpInstance;
+  state.instances.auto_stop = newShutdownDate;
+
+  const { isAutoShutMonth } = _assertLimits(draft, d, {});
+
+  console.log(
+    RESPONSES.STOP_SUCCESS(
+      totalInstanceCount,
+      isAutoShutMonth ? state.instances.auto_stop : null
+    )
+  );
+}
 
 export function _updateUptimeAlloc(draft: StoreState, now: Date) {
+  const state = draft.service;
+  const tmpInstanceList = Object.assign({}, state.instances.list);
   const allocUptime = calcAllocUptime(draft.service, now);
   const isLastMinute =
-    differenceInMinutes(now, draft.service.instances.stop) <= 1;
+    differenceInMinutes(now, draft.service.instances.auto_stop) <= 1;
 
   if (isLastMinute) return;
 
-  draft.service.instances.last_calc = now;
+  for (const key in tmpInstanceList) {
+    if (Object.prototype.hasOwnProperty.call(tmpInstanceList, key)) {
+      tmpInstanceList[key].last_calc = now;
+    }
+  }
+
+  draft.service.instances.list = tmpInstanceList;
   draft.service.allocation.uptime = allocUptime;
 }
 
@@ -138,13 +217,21 @@ export function _updateUptimeFee(draft: StoreState) {
 
 export function _assertUsageOverrun(draft: StoreState) {
   const state = draft.service;
+  const tmpInstanceList = Object.assign({}, state.instances.list);
   const isOverrun =
     state.calculated_fees.storage + state.calculated_fees.uptime >
     state.limits.u;
 
   if (isOverrun) {
     draft.service.is_fee_overrun = true;
-    draft.service.instances.count = 0;
+
+    for (const key in tmpInstanceList) {
+      if (Object.prototype.hasOwnProperty.call(tmpInstanceList, key)) {
+        tmpInstanceList[key].count = 0;
+      }
+    }
+
+    draft.service.instances.list = tmpInstanceList;
   }
 
   return isOverrun;
@@ -174,9 +261,10 @@ export function _assertLimits(
   const isExceedU =
     state.limits.u > 0 ? storageFee + uptimeFee > state.limits.u : false;
   const isAutoShutMonth =
-    state.instances.stop && isSameMonth(state.instances.stop, d);
+    state.instances.auto_stop && isSameMonth(state.instances.auto_stop, d);
   const isAutoShutNextMonth =
-    state.instances.stop && isSameMonth(addMonths(state.instances.stop, 1), d);
+    state.instances.auto_stop &&
+    isSameMonth(addMonths(state.instances.auto_stop, 1), d);
 
   return {
     isExceedT,

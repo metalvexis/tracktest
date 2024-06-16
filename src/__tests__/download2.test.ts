@@ -6,7 +6,7 @@ import { createStore } from "zustand";
 
 const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceState}));
 
-jest.spyOn(global.console, 'log').mockImplementation(() => {});
+jest.spyOn(global.console, 'log')
 
 test("2_Download not existing", function() {
   const state = TestStore.getState(); // store.getState();

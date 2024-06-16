@@ -1,6 +1,6 @@
 import { parseDateToString } from "./lib";
 
-export const DATE_FORMAT = 'yyyy-MM-dd H:m'
+export const DATE_FORMAT = 'yyyy-MM-dd HH:mm'
 
 export const SIZE_UNITS = {
   B: 1,
@@ -51,7 +51,11 @@ export const RESPONSES = {
   DOWNLOAD_NOT_FOUND: () => `DOWNLOAD: no such files`,
   DOWNLOAD_SUCCESS: (transfer: number, time: Date | null) => `DOWNLOAD: ${transfer} ${time ? parseDateToString(time) : '-'}`,
 
-  
-  DELETE_NOT_FOUND: () => `DOWNLOAD: no such files`,
-  DELETE_SUCCESS: (storage: number, time: Date | null) => `UPLOAD: ${storage} ${time ? time : '-'}`,
+  DELETE_NOT_FOUND: () => `DELETE: no such files`,
+  DELETE_SUCCESS: (storage: number, time: Date | null) => `DELETE: ${storage} ${time ? parseDateToString(time) : '-'}`,
+
+  LAUNCH_SUCCESS: (instanceCount: number, time: Date | null) => `LAUNCH: ${instanceCount} ${time ? parseDateToString(time) : '-'}`,
+
+  STOP_FAIL: () => `STOP: please correctly specify the instances`,
+  STOP_SUCCESS: (instanceCount: number, time: Date | null) => `STOP: ${instanceCount} ${time ? parseDateToString(time) : '-'}`,
 };

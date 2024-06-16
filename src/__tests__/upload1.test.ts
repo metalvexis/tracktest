@@ -6,13 +6,17 @@ import { createStore } from "zustand";
 
 const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceState}));
 
-jest.spyOn(global.console, 'log').mockImplementation(() => {});
+jest.spyOn(global.console, 'log')
 
 test("1_upload", function() {
   const state = TestStore.getState(); // store.getState();
-  const size = 99 * SIZE_UNITS.GB;
+  const size = 2 * SIZE_UNITS.GB;
+
   _upload(state, parseStringToDate("2021-04-03 12:30"), size);
-  
-  expect(console.log).toHaveBeenCalledWith(RESPONSES.UPLOAD_SUCCESS(size, size, null));
   expect(state.service.allocation.storage).toBe(size);
+  expect(console.log).toHaveBeenNthCalledWith(1, RESPONSES.UPLOAD_SUCCESS(size, size, null));
+
+  _upload(state, parseStringToDate("2021-04-03 13:30"), size);
+  expect(console.log).toHaveBeenNthCalledWith(2, RESPONSES.UPLOAD_SUCCESS(size*2, size*2, null));
+  expect(state.service.allocation.storage).toBe(size*2);
 });

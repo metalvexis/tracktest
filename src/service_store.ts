@@ -5,6 +5,8 @@ import {
   _upload,
   _download,
   _delete,
+  _launch,
+  _stop,
   _updateUptimeAlloc,
   _updateUptimeFee,
   _assertUsageOverrun,
@@ -13,10 +15,8 @@ import {
 export const initialServiceState: ServiceState = {
   is_fee_overrun: false,
   instances: {
-    count: 0,
-    start: new Date(2000, 0, 1, 0, 0),
-    last_calc: new Date(2000, 0, 1, 0, 0),
-    stop: new Date(2000, 0, 1, 0, 0),
+    auto_stop: new Date(2000, 0, 1, 0, 0),
+    list: {},
   },
   limits: {
     t: 100 * SIZE_UNITS.GB, // 100 GB
@@ -110,6 +110,7 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
           return console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.LAUNCH));
         }
 
+        _launch(draft, date, instanceCount);
       })
     )
   },
