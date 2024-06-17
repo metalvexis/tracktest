@@ -9,9 +9,9 @@ const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceStat
 jest.spyOn(global.console, 'log')
 
 test("1_Download existing", function() {
-  const state = TestStore.getState(); // store.getState();
-  const size = 50 * SIZE_UNITS.GB;
-  const existingFileSize = 50 * SIZE_UNITS.GB;
+  const state = TestStore.getState();
+  const size = 5 * SIZE_UNITS.GB;
+  const existingFileSize = 5 * SIZE_UNITS.GB;
   state.service.allocation.storage = existingFileSize;
   state.service.allocation.transfer = existingFileSize;
 

@@ -118,9 +118,9 @@ export function calcLimits(
     uptimeFee = 0,
     allocUptime = 0,
   } = changes;
-  const isExceedT = allocTransfer > state.limits.t;
-  const isExceedS = allocStorage > state.limits.s;
-  const hasMoreYen = state.limits.u > 0;
+  const isExceedT = allocTransfer > state.fee_tiers.free_transfer + state.limits.t;
+  const isExceedS = allocStorage > state.fee_tiers.free_storage + state.limits.s;
+  const hasMoreYen = (state.limits.u) > 0;
   const isExceedFreeUptime =
     !hasMoreYen ? allocUptime > state.fee_tiers.free_uptime: false;
   const isExceedU =

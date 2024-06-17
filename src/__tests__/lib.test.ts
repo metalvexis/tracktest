@@ -13,7 +13,7 @@ import { DATE_FORMAT, SIZE_UNITS, TIME_UNITS, FEE_RATES } from "../constants";
 import { addMinutes } from "date-fns";
 describe("LIBRARY", () => {
   test("Calc fees within free tier", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
     const transfer = 10 * SIZE_UNITS.GB;
     const storage = 20 * SIZE_UNITS.GB;
     const uptime = 100 * TIME_UNITS.H;
@@ -30,7 +30,7 @@ describe("LIBRARY", () => {
   });
 
   test("Calc fees exceeding storage free tier", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
     const free_storage = initState.fee_tiers.free_storage;
     const excess = 1 * SIZE_UNITS.GB;
     const expectFee =
@@ -41,7 +41,7 @@ describe("LIBRARY", () => {
   });
 
   test("Calc fees exceeding transfer free tier", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
     const free_transfer = initState.fee_tiers.free_transfer;
     const excess = 1 * SIZE_UNITS.GB;
     const expectFee =
@@ -52,17 +52,18 @@ describe("LIBRARY", () => {
   });
 
   test("Calc fees exceeding uptime free tier", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
+    initState.limits.u = 5000; // Yen
     const free_uptime = initState.fee_tiers.free_uptime; // in Minutes
     const excess = 60;
-    const expectFee = 0;
+    const expectFee = 100;
     const uptimeFee = calcUptimeFee(initState, free_uptime + excess);
 
     expect(uptimeFee).toBe(expectFee);
   });
 
   test("Calc alloc uptime", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
     const instanceCount = 1;
     const start = new Date(2024, 0, 1, 0, 0);
     const minutesLater = 60;
@@ -94,7 +95,7 @@ describe("LIBRARY", () => {
   });
 
   test("Calc auto-shutdown date 100 instances", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
     const instanceCount = 100;
     const start = new Date(2021, 3, 1, 12, 0, 0);
     const expectShutDate = addMinutes(start, 61);
@@ -103,7 +104,7 @@ describe("LIBRARY", () => {
   });
 
   test("Calc auto-shutdown date 1000 instances", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
     const instanceCount = 1000;
     const start = new Date(2021, 3, 6, 12, 0, 0);
     const expectShutDate = new Date(2021, 3, 6, 12, 7, 0);

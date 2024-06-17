@@ -58,4 +58,8 @@ export const RESPONSES = {
 
   STOP_FAIL: () => `STOP: please correctly specify the instances`,
   STOP_SUCCESS: (instanceCount: number, time: Date | null) => `STOP: ${instanceCount} ${time ? parseDateToString(time) : '-'}`,
+
+  UPGRADE_FAIL: () => `UPGRADE: invalid value`,
+  UPGRADE_TIER_SUCCESS: (time: Date | null) => `UPGRADE: ${time ? parseDateToString(time) : '-'}`,
+  UPGRADE_LIMIT_SUCCESS: () => `UPGRADE: accepted`,
 };

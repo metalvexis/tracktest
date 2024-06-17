@@ -74,6 +74,8 @@ interface StoreActions {
   remove: (date: Date, size: number) => void;
   launch: (date: Date, instanceCount: number) => void;
   stop: (date: Date, start: Date, instanceCount: number) => void;
+  upgrade: (date: Date, newLimitU: number)=> void;
+  change: (date: Date, abbrev: string, newLimit: number)=> void;
 };
 
 type CostPerUnit = { cost: number, unit: number };

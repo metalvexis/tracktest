@@ -8,12 +8,13 @@ const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceStat
 
 jest.spyOn(global.console, 'log')
 
-test("2_upload usage overrun", function() {
+test("2_upload exceed t", function() {
   const state = TestStore.getState(); // store.getState();
-  const size = state.service.fee_tiers.free_storage + (11 * SIZE_UNITS.GB);
-  state.service.limits.u = 10; // 10 Yen is 10 GB extra storage
+  
+  const size = (21 * SIZE_UNITS.GB);
   _upload(state, parseStringToDate("2021-04-03 12:30"), size);
   
   expect(state.service.allocation.storage).toBe(0);
-  expect(console.log).toHaveBeenCalledWith(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD));
+  expect(state.service.allocation.transfer).toBe(0);
+  expect(console.log).toHaveBeenCalledWith(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.t));
 });

@@ -36,20 +36,21 @@ export function _upload(
     }
   );
 
+  if (isExceedT) {
+    console.log(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.t));
+    return;
+  }
+  
   if (isExceedS) {
     console.log(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.s));
     return;
   }
 
-  if (isExceedT) {
-    console.log(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.t));
-    return;
-  }
 
-  if (isExceedU || isExceedFreeUptime) {
-    console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD));
-    return;
-  }
+  // if (isExceedU || isExceedFreeUptime) {
+  //   console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD));
+  //   return;
+  // }
 
   state.allocation.storage = allocStorage;
   state.allocation.transfer = allocTransfer;
@@ -313,4 +314,33 @@ export function _fastForward(
   return {
     isOverrun
   }
+}
+
+export function _upgrade(
+  draft: StoreState,
+  date: Date,
+  newLimitU: number,
+) {
+  const state = draft.service;
+  const isFreeTier = state.limits.u === 0;
+      
+  const { isAutoShutMonth } = calcLimits(draft, date, {})
+
+  if (isFreeTier) {
+    state.limits.t = state.limits.t_default;
+    state.limits.s = state.limits.s_default;
+    state.limits.u = state.limits.u_default;
+
+    state.limits.u_max = state.limits.u_max;
+    
+    console.log(RESPONSES.UPGRADE_TIER_SUCCESS(isAutoShutMonth ? state.instances.auto_stop : null));
+    return
+  }
+
+  if (newLimitU < state.limits.u) {
+    console.log(RESPONSES.UPGRADE_FAIL());
+    return;
+  }
+
+  console.log(RESPONSES.UPGRADE_LIMIT_SUCCESS());
 }

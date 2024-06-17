@@ -20,20 +20,20 @@ export const initialServiceState: ServiceState = {
     list: {},
   },
   limits: {
-    t: 100 * SIZE_UNITS.GB, // 100 GB
+    t: 0, // 0 GB
     t_default: 100 * SIZE_UNITS.GB, // 100 GB
     t_min: 1 * SIZE_UNITS.KB, // 1 KB
     t_max: 1 * SIZE_UNITS.TB, // 1 TB
 
-    s: 100 * SIZE_UNITS.GB, // 100 GB
+    s: 0, // 0 GB
     s_default: 100 * SIZE_UNITS.GB, // 100 GB
     s_min: 1 * SIZE_UNITS.KB, // 1 KB
     s_max: 1 * SIZE_UNITS.TB, // 1 TB
 
-    u: 0, // Yen
+    u: 0, // 0 Yen
     u_default: 10000,
     u_min: 100,
-    u_max: 100,
+    u_max: 0,
   },
   fee_tiers: {
     free_transfer: 10 * SIZE_UNITS.GB, // 10 GB
@@ -65,6 +65,23 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
     );
   },
 
+  upgrade(date, newLimitU) {
+    set(
+      produce((draft: StoreState) => {
+        _fastForward(draft, date, COMMANDS.UPGRADE);
+        return draft;
+      })
+    );
+  },
+
+  change(date, abbrev, newLimitU) {
+    set(
+      produce((draft: StoreState) => {
+        _fastForward(draft, date, COMMANDS.CHANGE);
+        return draft;
+      })
+    );
+  },
   upload: (date: Date, size: number) => {
     set(
       produce((draft: StoreState) => {
