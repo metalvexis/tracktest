@@ -2,7 +2,7 @@ import { parse } from "date-fns";
 import { DATE_FORMAT, COMMANDS, RESPONSES } from "./constants";
 import { ServiceState } from "./service_store";
 import { parseStringToDate } from "./lib";
-function main(lines: string[]) {
+export function main(lines: string[]) {
   const { getState } = ServiceState;
   const { calcEndOfMonth, upload, download, remove, launch, stop, upgrade, change } = getState();
   lines.forEach((v, i) => {

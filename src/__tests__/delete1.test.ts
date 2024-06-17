@@ -8,8 +8,8 @@ jest.spyOn(global.console, 'log')
 
 test("1_Delete existing", function() {
   const state = ServiceState.getState(); // store.getState();
-  const size = 50 * SIZE_UNITS.GB;
-  const existingFileSize = 50 * SIZE_UNITS.GB;
+  const size = 2 * SIZE_UNITS.GB;
+  const existingFileSize = 2 * SIZE_UNITS.GB;
   state.service.allocation.storage = existingFileSize;
   state.service.allocation.transfer = existingFileSize;
 
@@ -18,6 +18,6 @@ test("1_Delete existing", function() {
   expect(state.service.allocation.storage).toBe(existingFileSize - size);
 
   expect(console.log).toHaveBeenCalledWith(
-    RESPONSES.DELETE_SUCCESS(size, null)
+    RESPONSES.DELETE_SUCCESS(existingFileSize - size, null)
   )
 });

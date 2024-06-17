@@ -65,10 +65,6 @@ export function _download(draft: StoreState, d: Date, size: number) {
   const state = draft.service;
   const allocTransfer = state.allocation.transfer + size;
 
-  if (size > state.allocation.storage) {
-    console.log(RESPONSES.DOWNLOAD_NOT_FOUND());
-    return;
-  }
 
   const { isExceedT, isAutoShutMonth } = calcLimits(draft, d, {
     allocTransfer,
@@ -79,6 +75,11 @@ export function _download(draft: StoreState, d: Date, size: number) {
     return;
   }
 
+  if (size > state.allocation.storage) {
+    console.log(RESPONSES.DOWNLOAD_NOT_FOUND());
+    return;
+  }
+  
   state.allocation.transfer = allocTransfer;
 
   console.log(
@@ -241,58 +242,6 @@ export function _assertUsageOverrun(draft: StoreState, date: Date) {
   return isOverrun;
 }
 
-/**
- * @deprecated
- * @param draft
- * @param d
- * @param changes
- * @returns
- */
-export function _assertLimits(
-  draft: StoreState,
-  d: Date,
-  changes: {
-    allocTransfer?: number;
-    allocStorage?: number;
-    allocUptime?: number;
-    transferFee?: number;
-    storageFee?: number;
-    uptimeFee?: number;
-  }
-) {
-  const state = draft.service;
-  const {
-    allocTransfer = 0,
-    allocStorage = 0,
-    storageFee = 0,
-    uptimeFee = 0,
-    allocUptime = 0,
-  } = changes;
-  const isExceedT = allocTransfer > state.limits.t;
-  const isExceedS = allocStorage > state.limits.s;
-  const hasMoreYen = state.limits.u > 0;
-  const isExceedFreeUptime = !hasMoreYen
-    ? allocUptime > state.fee_tiers.free_uptime
-    : false;
-  const isExceedU = hasMoreYen
-    ? storageFee + uptimeFee > state.limits.u
-    : false;
-  const isAutoShutMonth =
-    state.instances.auto_stop && isSameMonth(state.instances.auto_stop, d);
-  const isAutoShutNextMonth =
-    state.instances.auto_stop &&
-    isSameMonth(addMonths(state.instances.auto_stop, 1), d);
-
-  return {
-    isExceedT,
-    isExceedS,
-    isExceedU,
-    isExceedFreeUptime,
-    isAutoShutMonth,
-    isAutoShutNextMonth,
-  };
-}
-
 export function _fastForward(draft: StoreState, date: Date) {
   draft.service.current_date = date;
   _updateUptimeAlloc(draft, date);
@@ -317,13 +266,13 @@ export function _upgrade(draft: StoreState, date: Date, newLimitU: number) {
   }
 
   if (!isFreeTier) {
-    const isChangeU = checkChangeLimitS(state, newLimitU);
+    const isChangeU = checkChangeLimitU(state, newLimitU);
 
     if (!isChangeU) {
       console.log(RESPONSES.UPGRADE_FAIL());
       return;
     }
-    state.limits.u = newLimitU;
+    state.limits.u_max = newLimitU;
   }
 
   if (totalInstanceCount > 0) {
@@ -399,6 +348,7 @@ export function _calcEOM(draft: StoreState) {
   state.current_date = startOfMonth(addMonths(state.current_date, 1));
   state.allocation.transfer = 0;
   state.allocation.uptime = 0;
+  state.is_fee_overrun = false;
 
   _updateUptimeAlloc(draft, addMinutes(state.current_date, 1));
 

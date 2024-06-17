@@ -141,17 +141,13 @@ export function calcLimits(
   const isCurrAutoShutLater = state.instances.auto_stop > d;
   const isAutoShutMonth =
     isCurrAutoShutLater && isSameMonth(state.instances.auto_stop, d);
-  const isAutoShutNextMonth =
-    isCurrAutoShutLater &&
-    isSameMonth(addMonths(d, 1), state.instances.auto_stop);
-
+  
   return {
     isExceedT,
     isExceedS,
     isExceedU,
     isExceedFreeUptime,
     isAutoShutMonth,
-    isAutoShutNextMonth,
   };
 }
 

@@ -20,7 +20,7 @@ test("2_Basic", function () {
   launch(parseStringToDate("2021-04-01 12:00"), 100);
   
   // UPGRADE 2021-04-01 12:01 10000
-  upgrade(parseStringToDate("2021-04-01 12:01"), 10000);
+  upgrade(parseStringToDate("2021-04-01 12:01"), 100000);
 
   // CHANGE 2021-04-01 12:02 u 50000
   change(parseStringToDate("2021-04-01 12:02"), "u", 50000);
