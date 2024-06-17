@@ -1,18 +1,13 @@
-import { initialServiceState } from "../service_store";
+import { ServiceState } from "../service_store";
 import { _launch } from "../commands";
 import { parseStringToDate } from "../lib";
 import { RESPONSES, SIZE_UNITS } from "../constants";
 import { addMinutes } from "date-fns";
-import { createStore } from "zustand";
-
-const TestStore = createStore<StoreState>((set) => ({
-  service: initialServiceState,
-}));
 
 jest.spyOn(global.console, "log");
 
 test("2_Launch 1 before end-of-month", function () {
-  const state = TestStore.getState();
+  const state = ServiceState.getState();
   const instanceCount = 1;
   const date1 = parseStringToDate("2021-04-29 12:00");
 

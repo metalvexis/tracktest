@@ -1,7 +1,11 @@
 import { createStore } from "zustand/vanilla";
 import { produce } from "immer";
+import { endOfMonth } from "date-fns";
 import { SIZE_UNITS, TIME_UNITS, RESPONSES, COMMANDS } from "./constants";
 import {
+  _calcEOM,
+  _upgrade,
+  _change,
   _fastForward,
   _upload,
   _download,
@@ -14,6 +18,8 @@ import {
 } from "./commands";
 
 export const initialServiceState: ServiceState = {
+  current_date: new Date(2000, 0, 1, 0, 0),
+  user_tier: "FREE",
   is_fee_overrun: false,
   instances: {
     auto_stop: new Date(2000, 0, 1, 0, 0),
@@ -23,12 +29,12 @@ export const initialServiceState: ServiceState = {
     t: 0, // 0 GB
     t_default: 100 * SIZE_UNITS.GB, // 100 GB
     t_min: 1 * SIZE_UNITS.KB, // 1 KB
-    t_max: 1 * SIZE_UNITS.TB, // 1 TB
+    t_max: 100 * SIZE_UNITS.TB, // 1 TB
 
     s: 0, // 0 GB
     s_default: 100 * SIZE_UNITS.GB, // 100 GB
     s_min: 1 * SIZE_UNITS.KB, // 1 KB
-    s_max: 1 * SIZE_UNITS.TB, // 1 TB
+    s_max: 100 * SIZE_UNITS.TB, // 1 TB
 
     u: 0, // 0 Yen
     u_default: 10000,
@@ -54,13 +60,18 @@ export const initialServiceState: ServiceState = {
 
 export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
   service: { ...initialServiceState },
-  calc: () => set(produce((draft: StoreState) => {})),
+  calcEndOfMonth: () => set(
+    produce((draft: StoreState) => {
+      _fastForward(draft, endOfMonth(draft.service.current_date));
+
+      _calcEOM(draft);
+    })
+  ),
 
   fastForward: (date: Date, command: string) => {
     set(
       produce((draft: StoreState) => {
-        _fastForward(draft, date, command);
-        return draft;
+        _fastForward(draft, date);
       })
     );
   },
@@ -68,8 +79,8 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
   upgrade(date, newLimitU) {
     set(
       produce((draft: StoreState) => {
-        _fastForward(draft, date, COMMANDS.UPGRADE);
-        return draft;
+        _fastForward(draft, date);
+        _upgrade(draft, date, newLimitU);
       })
     );
   },
@@ -77,16 +88,19 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
   change(date, abbrev, newLimitU) {
     set(
       produce((draft: StoreState) => {
-        _fastForward(draft, date, COMMANDS.CHANGE);
-        return draft;
+        _fastForward(draft, date);
+        _change(draft, date, abbrev, newLimitU);
       })
     );
   },
+
   upload: (date: Date, size: number) => {
     set(
       produce((draft: StoreState) => {
-        const { isOverrun } = _fastForward(draft, date, COMMANDS.UPLOAD);
-        !isOverrun && _upload(draft, date, size);
+        const { isOverrun } = _fastForward(draft, date);
+        isOverrun
+          ? console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD))
+          : _upload(draft, date, size);
       })
     );
   },
@@ -94,8 +108,10 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
   download: (date: Date, size: number) => {
     set(
       produce((draft: StoreState) => {
-        const { isOverrun } = _fastForward(draft, date, COMMANDS.DOWNLOAD);
-        !isOverrun && _download(draft, date, size);
+        const { isOverrun } = _fastForward(draft, date);
+        isOverrun
+          ? console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.DOWNLOAD))
+          : _download(draft, date, size);
       })
     );
   },
@@ -103,27 +119,33 @@ export const ServiceState = createStore<StoreState & StoreActions>((set) => ({
   remove: (date: Date, size: number) => {
     set(
       produce((draft: StoreState) => {
-        const { isOverrun } = _fastForward(draft, date, COMMANDS.DELETE);
-        !isOverrun && _delete(draft, date, size);
+        const { isOverrun } = _fastForward(draft, date);
+        isOverrun
+          ? console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.DELETE))
+          : _delete(draft, date, size);
       })
-    )
+    );
   },
 
   launch: (date: Date, instanceCount: number) => {
     set(
       produce((draft: StoreState) => {
-        const { isOverrun } = _fastForward(draft, date, COMMANDS.LAUNCH);
-        !isOverrun && _launch(draft, date, instanceCount);
+        const { isOverrun } = _fastForward(draft, date);
+        isOverrun
+          ? console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.LAUNCH))
+          : _launch(draft, date, instanceCount);
       })
-    )
+    );
   },
 
-  stop: (date: Date, start: Date, instanceCount: number) => {    
+  stop: (date: Date, start: Date, instanceCount: number) => {
     set(
       produce((draft: StoreState) => {
-        const { isOverrun } = _fastForward(draft, date, COMMANDS.STOP);
-        !isOverrun && _stop(draft, date, start, instanceCount)
+        const { isOverrun } = _fastForward(draft, date);        
+        isOverrun
+          ? console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.STOP))
+          : _stop(draft, date, start, instanceCount);;
       })
-    )
+    );
   },
 }));

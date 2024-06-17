@@ -62,4 +62,10 @@ export const RESPONSES = {
   UPGRADE_FAIL: () => `UPGRADE: invalid value`,
   UPGRADE_TIER_SUCCESS: (time: Date | null) => `UPGRADE: ${time ? parseDateToString(time) : '-'}`,
   UPGRADE_LIMIT_SUCCESS: () => `UPGRADE: accepted`,
+
+  CHANGE_FAIL: () => `CHANGE: invalid value`,
+  CHANGE_FREE_FAIL: () => `CHANGE: free plan`,
+  CHANGE_SUCCESS: (time: Date | null) => `CHANGE: ${time ? parseDateToString(time) : '-'}`,
+
+  CALC_SUCCESS: (fee: number, time: Date | null) => `CALC: ${fee} ${time ? parseDateToString(time) : '-'}`,
 };

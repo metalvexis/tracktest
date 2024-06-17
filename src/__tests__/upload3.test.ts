@@ -1,15 +1,12 @@
-import { initialServiceState } from "../service_store";
+import { ServiceState } from "../service_store";
 import { _upload } from "../commands";
 import { parseStringToDate } from "../lib";
 import { SIZE_UNITS, RESPONSES, COMMANDS, ABBREV } from "../constants";
-import { createStore } from "zustand";
-
-const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceState}));
 
 jest.spyOn(global.console, 'log')
 
 test("3_upload exceed s", function() {
-  const state = TestStore.getState();
+  const state = ServiceState.getState();
   state.service.limits.t = 100 * SIZE_UNITS.GB;
   const size = state.service.fee_tiers.free_storage + (1 * SIZE_UNITS.GB);
   _upload(state, parseStringToDate("2021-04-03 12:30"), size);

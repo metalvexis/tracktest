@@ -1,15 +1,12 @@
-import { initialServiceState } from "../service_store";
+import { ServiceState } from "../service_store";
 import { _upload, _download } from "../commands";
 import { parseStringToDate } from "../lib";
 import { RESPONSES, SIZE_UNITS } from "../constants";
-import { createStore } from "zustand";
-
-const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceState}));
 
 jest.spyOn(global.console, 'log')
 
 test("1_Download existing", function() {
-  const state = TestStore.getState();
+  const state = ServiceState.getState();
   const size = 5 * SIZE_UNITS.GB;
   const existingFileSize = 5 * SIZE_UNITS.GB;
   state.service.allocation.storage = existingFileSize;

@@ -45,16 +45,20 @@ interface InstanceMeta {
   last_calc: Date,
 }
 
-interface InstanceItem {
+interface InstanceRecords {
   [key: string]: InstanceMeta,
 }
 
 interface Instance {
   auto_stop: Date,
-  list: InstanceItem
+  list: InstanceRecords
 }
 
+type UserTier = "FREE" | "PAID";
+
 interface ServiceState {
+  current_date: Date,
+  user_tier: UserTier,
   is_fee_overrun: boolean,
   instances: Instance,
   limits: FeeLimits,
@@ -69,6 +73,7 @@ interface StoreState {
 
 interface StoreActions {
   // fastForward: (date: Date, command: string) => void;
+  calcEndOfMonth: () => void;
   upload: (d: Date, size: number) => void;
   download: (date: Date, size: number) => void;
   remove: (date: Date, size: number) => void;

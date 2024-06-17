@@ -1,15 +1,13 @@
-import { initialServiceState } from "../service_store";
+import { ServiceState } from "../service_store";
 import { _delete } from "../commands";
 import { parseStringToDate } from "../lib";
 import { RESPONSES, SIZE_UNITS } from "../constants";
 import { createStore } from "zustand";
 
-const TestStore = createStore<StoreState>((set)=> ({ service: initialServiceState}));
-
 jest.spyOn(global.console, 'log')
 
 test("1_Delete existing", function() {
-  const state = TestStore.getState(); // store.getState();
+  const state = ServiceState.getState(); // store.getState();
   const size = 50 * SIZE_UNITS.GB;
   const existingFileSize = 50 * SIZE_UNITS.GB;
   state.service.allocation.storage = existingFileSize;

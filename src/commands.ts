@@ -6,8 +6,12 @@ import {
   calcAutoShutdownDate,
   parseDateToString,
   calcLimits,
+  getInstanceCount,
+  checkChangeLimitT,
+  checkChangeLimitS,
+  checkChangeLimitU,
 } from "./lib";
-import { isSameMonth, differenceInMinutes, addMonths } from "date-fns";
+import { isSameMonth, startOfMonth, addMonths, addMinutes } from "date-fns";
 
 export function _upload(
   draft: StoreState,
@@ -26,31 +30,21 @@ export function _upload(
     allocUptime
   );
 
-  const { isExceedT, isExceedS, isExceedU, isExceedFreeUptime, isAutoShutMonth } = calcLimits(
-    draft,
-    d,
-    {
-      allocTransfer,
-      allocStorage,
-      storageFee,
-    }
-  );
+  const { isExceedT, isExceedS, isAutoShutMonth } = calcLimits(draft, d, {
+    allocTransfer,
+    allocStorage,
+    storageFee,
+  });
 
   if (isExceedT) {
     console.log(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.t));
     return;
   }
-  
+
   if (isExceedS) {
     console.log(RESPONSES.EXCEED_LIMIT(COMMANDS.UPLOAD, ABBREV.s));
     return;
   }
-
-
-  // if (isExceedU || isExceedFreeUptime) {
-  //   console.log(RESPONSES.EXCEED_USAGE_LIMIT(COMMANDS.UPLOAD));
-  //   return;
-  // }
 
   state.allocation.storage = allocStorage;
   state.allocation.transfer = allocTransfer;
@@ -111,7 +105,7 @@ export function _delete(draft: StoreState, d: Date, size: number) {
 
   state.allocation.storage = allocStorage;
 
-  console.log(RESPONSES.DELETE_SUCCESS(size, isAutoShutMonth ? d : null));
+  console.log(RESPONSES.DELETE_SUCCESS(allocStorage, isAutoShutMonth ? d : null));
 }
 
 export function _launch(draft: StoreState, d: Date, instanceCount: number) {
@@ -131,10 +125,7 @@ export function _launch(draft: StoreState, d: Date, instanceCount: number) {
         };
 
   tmpInstanceList[instanceKey] = tmpInstance;
-  const totalInstanceCount = Object.entries(tmpInstanceList).reduce(
-    (p, c) => p + c[1].count,
-    0
-  );
+  const totalInstanceCount = getInstanceCount(tmpInstanceList);
 
   const newShutdownDate = calcAutoShutdownDate(state, totalInstanceCount, d);
 
@@ -151,7 +142,12 @@ export function _launch(draft: StoreState, d: Date, instanceCount: number) {
   );
 }
 
-export function _stop(draft: StoreState, d: Date, start: Date, instanceCount: number) {
+export function _stop(
+  draft: StoreState,
+  d: Date,
+  start: Date,
+  instanceCount: number
+) {
   const state = draft.service;
   const tmpInstanceList = Object.assign({}, state.instances.list);
   const instanceKey = parseDateToString(start);
@@ -172,10 +168,7 @@ export function _stop(draft: StoreState, d: Date, start: Date, instanceCount: nu
   };
 
   tmpInstanceList[instanceKey] = tmpInstance;
-  const totalInstanceCount = Object.entries(tmpInstanceList).reduce(
-    (p, c) => p + c[1].count,
-    0
-  );
+  const totalInstanceCount = getInstanceCount(tmpInstanceList);
 
   const newShutdownDate = calcAutoShutdownDate(state, totalInstanceCount, d);
 
@@ -205,7 +198,7 @@ export function _updateUptimeAlloc(draft: StoreState, now: Date) {
         tmpInstanceList[key].count = 0;
       } else {
         tmpInstanceList[key].last_calc = now;
-      }      
+      }
     }
   }
 
@@ -229,8 +222,8 @@ export function _assertUsageOverrun(draft: StoreState, date: Date) {
     allocUptime: state.allocation.uptime,
     transferFee: state.calculated_fees.transfer,
     storageFee: state.calculated_fees.storage,
-    uptimeFee: state.calculated_fees.uptime,  
-  })
+    uptimeFee: state.calculated_fees.uptime,
+  });
   const isOverrun = isExceedU || isExceedFreeUptime;
 
   if (isOverrun) {
@@ -250,10 +243,10 @@ export function _assertUsageOverrun(draft: StoreState, date: Date) {
 
 /**
  * @deprecated
- * @param draft 
- * @param d 
- * @param changes 
- * @returns 
+ * @param draft
+ * @param d
+ * @param changes
+ * @returns
  */
 export function _assertLimits(
   draft: StoreState,
@@ -278,10 +271,12 @@ export function _assertLimits(
   const isExceedT = allocTransfer > state.limits.t;
   const isExceedS = allocStorage > state.limits.s;
   const hasMoreYen = state.limits.u > 0;
-  const isExceedFreeUptime =
-    !hasMoreYen ? allocUptime > state.fee_tiers.free_uptime: false;
-  const isExceedU =
-    hasMoreYen ? storageFee + uptimeFee > state.limits.u : false;
+  const isExceedFreeUptime = !hasMoreYen
+    ? allocUptime > state.fee_tiers.free_uptime
+    : false;
+  const isExceedU = hasMoreYen
+    ? storageFee + uptimeFee > state.limits.u
+    : false;
   const isAutoShutMonth =
     state.instances.auto_stop && isSameMonth(state.instances.auto_stop, d);
   const isAutoShutNextMonth =
@@ -298,49 +293,128 @@ export function _assertLimits(
   };
 }
 
-export function _fastForward(
-  draft: StoreState,
-  date: Date,
-  command: string,
-) {
+export function _fastForward(draft: StoreState, date: Date) {
+  draft.service.current_date = date;
   _updateUptimeAlloc(draft, date);
   _updateUptimeFee(draft);
   const isOverrun = _assertUsageOverrun(draft, date);
-  
-  if (isOverrun) {
-    console.log(RESPONSES.EXCEED_USAGE_LIMIT(command));
-  }
 
   return {
-    isOverrun
-  }
+    isOverrun,
+  };
 }
 
-export function _upgrade(
-  draft: StoreState,
-  date: Date,
-  newLimitU: number,
-) {
+export function _upgrade(draft: StoreState, date: Date, newLimitU: number) {
   const state = draft.service;
-  const isFreeTier = state.limits.u === 0;
-      
-  const { isAutoShutMonth } = calcLimits(draft, date, {})
+  const isFreeTier = state.user_tier === "FREE";
+  const totalInstanceCount = getInstanceCount(state.instances.list);
 
   if (isFreeTier) {
+    state.user_tier = "PAID";
     state.limits.t = state.limits.t_default;
     state.limits.s = state.limits.s_default;
     state.limits.u = state.limits.u_default;
-
-    state.limits.u_max = state.limits.u_max;
-    
-    console.log(RESPONSES.UPGRADE_TIER_SUCCESS(isAutoShutMonth ? state.instances.auto_stop : null));
-    return
   }
 
-  if (newLimitU < state.limits.u) {
-    console.log(RESPONSES.UPGRADE_FAIL());
+  if (!isFreeTier) {
+    const isChangeU = checkChangeLimitS(state, newLimitU);
+
+    if (!isChangeU) {
+      console.log(RESPONSES.UPGRADE_FAIL());
+      return;
+    }
+    state.limits.u = newLimitU;
+  }
+
+  if (totalInstanceCount > 0) {
+    state.instances.auto_stop = calcAutoShutdownDate(
+      state,
+      totalInstanceCount,
+      date
+    );
+  }
+
+  const { isAutoShutMonth } = calcLimits(draft, date, {});
+
+  isFreeTier
+    ? console.log(
+        RESPONSES.UPGRADE_TIER_SUCCESS(
+          isAutoShutMonth ? state.instances.auto_stop : null
+        )
+      )
+    : console.log(RESPONSES.UPGRADE_LIMIT_SUCCESS());
+}
+
+export function _change(
+  draft: StoreState,
+  date: Date,
+  abbrev: string,
+  newLimit: number
+) {
+  const state = draft.service;
+
+  if (state.user_tier === "FREE") {
+    console.log(RESPONSES.CHANGE_FREE_FAIL());
     return;
   }
 
-  console.log(RESPONSES.UPGRADE_LIMIT_SUCCESS());
+  if (abbrev === ABBREV.t) {
+    if (!checkChangeLimitT(state, newLimit)) {
+      console.log(RESPONSES.CHANGE_FAIL());
+      return;
+    }
+    state.limits.t = newLimit;
+  }
+
+  if (abbrev === ABBREV.s) {
+    if (!checkChangeLimitS(state, newLimit)) {
+      console.log(RESPONSES.CHANGE_FAIL());
+      return;
+    }
+
+    state.limits.s = newLimit;
+  }
+
+  if (abbrev === ABBREV.u) {
+    if (!checkChangeLimitU(state, newLimit)) {
+      console.log(RESPONSES.CHANGE_FAIL());
+      return;
+    }
+    state.limits.u = newLimit;
+    const totalInstanceCount = getInstanceCount(state.instances.list);
+    state.instances.auto_stop = calcAutoShutdownDate(
+      state,
+      totalInstanceCount,
+      date
+    );
+  }
+  const { isAutoShutMonth } = calcLimits(draft, date, {});
+  console.log(
+    RESPONSES.CHANGE_SUCCESS(isAutoShutMonth ? state.instances.auto_stop : null)
+  );
+}
+
+export function _calcEOM(draft: StoreState) {
+  const state = draft.service;
+  state.current_date = startOfMonth(addMonths(state.current_date, 1));
+  state.allocation.transfer = 0;
+  state.allocation.uptime = 0;
+
+  _updateUptimeAlloc(draft, addMinutes(state.current_date, 1));
+
+  const totalInstanceCount = getInstanceCount(state.instances.list);
+  const newStop = calcAutoShutdownDate(state, totalInstanceCount, addMinutes(state.current_date, -1));
+
+  state.instances.auto_stop = newStop;
+  const { isAutoShutMonth } = calcLimits(draft, state.current_date, {});
+  const actualUsage =
+    state.calculated_fees.storage + state.calculated_fees.uptime;
+  const usageFee = actualUsage < state.limits.u ? actualUsage : state.limits.u;
+  const showFee = usageFee + state.calculated_fees.transfer;
+  console.log(
+    RESPONSES.CALC_SUCCESS(
+      showFee,
+      isAutoShutMonth ? state.instances.auto_stop : null
+    )
+  );
 }

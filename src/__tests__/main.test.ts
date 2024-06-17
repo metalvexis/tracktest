@@ -5,7 +5,7 @@ import {
 } from "../lib";
 describe("Test Cases", () => {
   test("Case 2", () => {
-    const initState: ServiceState = { ...initialServiceState };
+    const initState: ServiceState = structuredClone(initialServiceState);
 
     const instanceCount = 100;
 

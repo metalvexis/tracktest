@@ -4,32 +4,35 @@ import { ServiceState } from "./service_store";
 import { parseStringToDate } from "./lib";
 function main(lines: string[]) {
   const { getState } = ServiceState;
-  const { upload, download, remove, launch, stop } = getState();
+  const { calcEndOfMonth, upload, download, remove, launch, stop, upgrade, change } = getState();
   lines.forEach((v, i) => {
     if (v === "" || !v) return;
     const [command, ...args] = v.split(" ");
 
     switch (command) {
       case COMMANDS.CALC:
+        calcEndOfMonth();
         break;
 
       case COMMANDS.UPGRADE:
+        const upgradeDate = parseStringToDate(`${args[0]} ${args[1]}`);
+        upgrade(upgradeDate, +args[2]);
         break;
 
       case COMMANDS.CHANGE:
+        const changeDate = parseStringToDate(`${args[0]} ${args[1]}`);
+        change(changeDate, args[2], +args[3] );
         break;
 
       case COMMANDS.LAUNCH:
         const launchDate = parseStringToDate(`${args[0]} ${args[1]}`);
-        upload(launchDate, +args[2]);
-        break;
+        launch(launchDate, +args[2]);
         break;
 
       case COMMANDS.STOP:
         const stopDate = parseStringToDate(`${args[0]} ${args[1]}`);
         const startDate = parseStringToDate(`${args[2]} ${args[3]}`);
         stop(stopDate, startDate, +args[4]);
-        break;
         break;
 
       case COMMANDS.UPLOAD:
