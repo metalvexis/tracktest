@@ -3,3 +3,4 @@ dist
 .track
 stdin.txt
 stdout.txt
+src/coverage
